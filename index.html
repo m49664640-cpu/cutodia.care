@@ -315,43 +315,25 @@
         const response = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/json'
           },
-          body: new URLSearchParams({
+          body: JSON.stringify({
             email: email,
-            vault_id: vaultId,
-            return_url: window.location.href
+            vault_id: vaultId
           })
         });
         
         const data = await response.json();
         
-        if (data.status === 'success') {
-          // First request succeeded, now get the Dropbox link
-          const dropboxResponse = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-              action: 'get_dropbox_link',
-              email: email,
-              vault_id: vaultId
-            })
-          });
-          
-          const dropboxData = await dropboxResponse.json();
-          
-          if (dropboxData.redirectUrl) {
-            updateUI(false, null, true);
-            setTimeout(() => {
-              window.location.href = dropboxData.redirectUrl;
-            }, 1500);
-          } else {
-            throw new Error('No redirect URL received');
-          }
+        if (data.status === 'success' && data.redirectUrl) {
+          // Show success message and redirect
+          updateUI(false, null, true);
+          setTimeout(() => {
+            window.location.href = data.redirectUrl;
+          }, 1500);
         } else {
-          updateUI(false, data.message || 'Invalid credentials');
+          // Show error message
+          updateUI(false, data.message || 'Invalid Vault ID or Email');
         }
       } catch (error) {
         console.error('Error:', error);
