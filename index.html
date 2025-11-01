@@ -278,26 +278,44 @@
           body: formData
         });
         
-        const result = await response.json();
+        // First, try to parse as text
+        const responseText = await response.text();
+        let result;
         
-        if (!response.ok || result.status === 'error') {
-          // Show error message from Zapier or default message
-          const errorMsg = result.message || 'Invalid Vault ID or Email';
-          throw new Error(errorMsg);
+        try {
+          // Try to parse as JSON if possible
+          result = JSON.parse(responseText);
+        } catch (e) {
+          // If not JSON, treat the entire response as the redirect URL
+          if (responseText && responseText.startsWith('http')) {
+            // Show success message
+            successMessage.textContent = 'Access granted! Redirecting to your vault...';
+            successMessage.style.display = 'block';
+            
+            // Redirect to the provided URL after a short delay
+            setTimeout(() => {
+              window.location.href = responseText;
+            }, 1500);
+            return;
+          } else {
+            throw new Error('Invalid response from server');
+          }
         }
         
-        // Check if we have a Dropbox link in the response
-        if (result.dropboxLink) {
+        // Handle JSON response
+        if (result && (result.dropboxLink || result.url)) {
           // Show success message
           successMessage.textContent = 'Access granted! Redirecting to your vault...';
           successMessage.style.display = 'block';
           
           // Redirect to the Dropbox link after a short delay
           setTimeout(() => {
-            window.location.href = result.dropboxLink;
+            window.location.href = result.dropboxLink || result.url;
           }, 1500);
+        } else if (result && result.message) {
+          throw new Error(result.message);
         } else {
-          throw new Error('No access link provided');
+          throw new Error('Invalid Vault ID or Email');
         }
         
       } catch (error) {
