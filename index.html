@@ -270,9 +270,8 @@
       }
     }
 
-    // Initialize form attributes
+    // Initialize form for client-side handling
     form.method = 'POST';
-    form.action = 'https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/';
 
     // Check URL parameters on page load for response
     window.addEventListener('load', () => {
@@ -305,12 +304,12 @@
         const email = document.getElementById('email').value.trim();
         const vaultId = document.getElementById('vaultId').value.trim();
         
-        const response = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
+        const response = await fetch('/api/verify-vault', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/json'
           },
-          body: new URLSearchParams({
+          body: JSON.stringify({
             email: email,
             vaultId: vaultId
           })
