@@ -244,66 +244,74 @@
     const form = document.getElementById('vaultForm');
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
+    const submitBtn = form.querySelector('button[type="submit"]');
 
-    // Create a hidden iframe for form submission
-    const iframe = document.createElement('iframe');
-    iframe.name = 'submit-iframe';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    // Initialize form attributes
-    form.target = 'submit-iframe';
-    form.method = 'POST';
-    form.action = 'https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/';
-    
-    // Listen for iframe load events
-    iframe.addEventListener('load', function() {
-      try {
-        // Try to parse the response from the iframe
-        const iframeContent = iframe.contentWindow.document.body.textContent;
-        if (iframeContent) {
-          const data = JSON.parse(iframeContent);
-          
-          if (data.status === 'success' && data.redirectUrl) {
-            // Show success message
-            successMessage.textContent = 'Access granted! Redirecting to your vault...';
-            successMessage.style.display = 'block';
-            
-            // Redirect after a brief delay
-            setTimeout(() => {
-              window.location.href = data.redirectUrl;
-            }, 1500);
-          } else if (data.status === 'error') {
-            // Show error message
-            errorMessage.textContent = data.message || 'Invalid Vault ID or Email';
-            errorMessage.style.display = 'block';
-          }
-        }
-      } catch (error) {
-        console.error('Error processing response:', error);
-      }
-      
-      // Reset button state
-      const submitBtn = form.querySelector('button[type="submit"]');
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Access My Vault';
-    });
-
-    form.addEventListener('submit', (e) => {
-      // Don't prevent default - let the form submit naturally to the iframe
-      
-      // Hide previous messages
+    // Function to show/hide messages and manage button state
+    function updateUI(loading = false, error = null, success = false) {
       errorMessage.style.display = 'none';
       successMessage.style.display = 'none';
       
-      // Show loading state
-      const submitBtn = form.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = 'Verifying...';
+      if (loading) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Verifying...';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Access My Vault';
+        
+        if (error) {
+          errorMessage.textContent = error;
+          errorMessage.style.display = 'block';
+        }
+        
+        if (success) {
+          successMessage.textContent = 'Access granted! Redirecting to your vault...';
+          successMessage.style.display = 'block';
+        }
+      }
+    }
+
+    // Initialize form attributes
+    form.method = 'POST';
+    form.action = 'https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/';
+
+    // Add hidden return URL field
+    const returnUrlInput = document.createElement('input');
+    returnUrlInput.type = 'hidden';
+    returnUrlInput.name = 'return_url';
+    returnUrlInput.value = window.location.href;
+    form.appendChild(returnUrlInput);
+
+    // Check URL parameters on page load for response
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      const redirectUrl = params.get('redirect_url');
+      const message = params.get('message');
+
+      if (status === 'success' && redirectUrl) {
+        updateUI(false, null, true);
+        setTimeout(() => {
+          window.location.href = decodeURIComponent(redirectUrl);
+        }, 1500);
+      } else if (status === 'error') {
+        updateUI(false, message || 'Invalid Vault ID or Email');
+      }
+
+      // Clean up URL parameters
+      if (status) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      updateUI(true);
       
       // Rename the vault_id field to match Zapier's expected format
       const vaultIdInput = document.getElementById('vaultId');
       vaultIdInput.name = 'vault_id';
+      
+      // Let the form submit naturally - no prevent default
     });
   </script>
 </body>
