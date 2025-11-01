@@ -235,7 +235,8 @@ Code is already written just need  to Update Logo
         successElement.style.display = 'none';
         
         try {
-          const response = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
+          // Call our API endpoint instead of Zapier directly
+          const response = await fetch('/api/access-vault', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
