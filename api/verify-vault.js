@@ -83,7 +83,9 @@ export default async function handler(req, res) {
     console.error('Verification error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'An error occurred while verifying your credentials'
+      message: 'An error occurred while verifying your credentials',
+      details: error.message || error.toString(),
+      stack: error.stack
     });
   }
 }
