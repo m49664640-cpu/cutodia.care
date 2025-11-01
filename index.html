@@ -278,31 +278,20 @@
           body: formData
         });
         
-        // Get the response as text first
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
+        // Parse the JSON response
+        const result = await response.json();
+        console.log('API Response:', result);
         
-        // Try to extract the redirect URL from the response
-        const redirectMatch = responseText.match(/redirect_url\s+([^\s]+)/);
-        
-        if (redirectMatch && redirectMatch[1]) {
-          const redirectUrl = redirectMatch[1].trim();
-          
+        if (result.status === 'success') {
           // Show success message
-          const messageMatch = responseText.match(/message\s+([^\n]+)/);
-          const successMsg = messageMatch ? messageMatch[1].trim() : 'Access granted! Redirecting to your vault...';
-          
-          successMessage.textContent = successMsg;
+          successMessage.textContent = 'Access granted! Please check your email for the vault link.';
           successMessage.style.display = 'block';
           
-          // Redirect to the provided URL after a short delay
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 1500);
+          // Clear the form
+          form.reset();
         } else {
-          // Try to find an error message in the response
-          const errorMatch = responseText.match(/error\s+([^\n]+)/i);
-          const errorMsg = errorMatch ? errorMatch[1].trim() : 'Invalid Vault ID or Email';
+          // Handle error case
+          const errorMsg = result.message || 'Invalid Vault ID or Email';
           throw new Error(errorMsg);
         }
         
