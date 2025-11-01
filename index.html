@@ -244,117 +244,65 @@
     const form = document.getElementById('vaultForm');
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
-    const submitBtn = form.querySelector('button[type="submit"]');
 
-    // Function to generate a unique callback URL
-    function generateCallbackId() {
-      return 'cb_' + Math.random().toString(36).substr(2, 9);
-    }
-
-    // Function to send data to our Vercel API endpoint
-    async function sendToZapierWithCallback(data) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Hide previous messages
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+      
+      // Get form values
+      const email = document.getElementById('email').value.trim();
+      const vaultId = document.getElementById('vaultId').value.trim();
+      const submitBtn = document.querySelector('.submit-btn');
+      const originalBtnText = submitBtn.textContent;
+      
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verifying...';
+      
       try {
-        const response = await fetch('/api/zapier-proxy', {
+        const response = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: data.email,
-            vaultId: data.vaultId,
-            timestamp: new Date().toISOString(),
-            source: 'custodia-care-vault-access',
-            userAgent: navigator.userAgent
+            email: email,
+            vaultId: vaultId,
+            timestamp: new Date().toISOString()
           })
         });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const error = new Error(errorData.message || 'Failed to process request');
-          error.response = errorData;
-          throw error;
-        }
         
-        return await response.json();
-      } catch (error) {
-        console.error('Error in sendToZapier:', error);
-        throw error;
-      }
-    }
-
-    // Handle form submission
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      // Hide previous messages and show loading state
-      errorMessage.style.display = 'none';
-      successMessage.style.display = 'none';
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Processing...';
-      
-      // Get form values
-      const email = document.getElementById('email').value.trim();
-      const vaultId = document.getElementById('vaultId').value.trim();
-      
-      try {
-        const response = await sendToZapierWithCallback({ 
-          email, 
-          vaultId 
-        });
+        const result = await response.json();
         
-        // Handle successful response
-        if (response.redirectUrl) {
-          window.location.href = response.redirectUrl;
-        } else if (response.success) {
-          successMessage.textContent = 'Access granted! Processing your request...';
+        if (response.ok && result.success) {
+          successMessage.textContent = 'Access granted! Redirecting to your vault...';
           successMessage.style.display = 'block';
+          
+          // Redirect to the Dropbox link from Zapier response
+          if (result.dropboxLink) {
+            window.location.href = result.dropboxLink;
+          } else {
+            // Fallback in case no link is provided
+            successMessage.textContent = 'Access granted! Please check your email for the vault link.';
+          }
         } else {
-          throw new Error(response.message || 'Authentication failed');
+          // Show error from Zapier or default message
+          errorMessage.textContent = result.message || 'Invalid Vault ID or Email. Please try again.';
+          errorMessage.style.display = 'block';
         }
-        
       } catch (error) {
         console.error('Error:', error);
-        errorMessage.textContent = error.message || 'There was an error processing your request. Please try again.';
+        errorMessage.textContent = 'An error occurred while verifying your credentials. Please try again.';
         errorMessage.style.display = 'block';
       } finally {
+        // Reset button state
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Access My Vault';
+        submitBtn.textContent = originalBtnText;
       }
     });
-
-    // Handle callback from Zapier (for iframe integration)
-    function handleZapierCallback() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const callbackId = urlParams.get('callback');
-      
-      if (callbackId && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'zapier-callback',
-          callbackId: callbackId,
-          ...Object.fromEntries(urlParams.entries())
-        }, '*');
-      }
-    }
-
-    // Check for callback when page loads
-    if (document.readyState === 'complete') {
-      handleZapierCallback();
-    } else {
-      window.addEventListener('load', handleZapierCallback);
-    }
-
-    // Listen for messages from iframe
-    window.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'zapier-callback') {
-        const callbackId = event.data.callbackId;
-        const callback = window[`zapierCallback_${callbackId}`];
-        if (typeof callback === 'function') {
-          window.history.replaceState({}, document.title, window.location.pathname);
-          callback(event.data);
-        }
-      }
-    });
-
   </script>
 </body>
 </html>
