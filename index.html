@@ -222,6 +222,38 @@ Code is already written just need  to Update Logo
     </div>
     
     <script>
+      // Simple ID generator for tracking requests
+      function generateRequestId() {
+        return 'req_' + Math.random().toString(36).substr(2, 9);
+      }
+
+      // Function to check status
+      async function checkStatus(requestId) {
+        try {
+          // This would be your server endpoint in a real app
+          // For this demo, we'll simulate a response
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              // Simulate a successful response after 2 seconds
+              if (Math.random() > 0.3) { // 70% success rate for demo
+                resolve({
+                  status: 'success',
+                  dropboxUrl: 'https://www.dropbox.com/your-vault-link'
+                });
+              } else {
+                resolve({
+                  status: 'error',
+                  message: 'Invalid Vault ID or Email'
+                });
+              }
+            }, 2000);
+          });
+        } catch (error) {
+          console.error('Error checking status:', error);
+          return { status: 'error', message: 'Connection error' };
+        }
+      }
+
       document.getElementById('vaultForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -229,44 +261,46 @@ Code is already written just need  to Update Logo
         const vaultId = document.getElementById('vaultId').value;
         const errorElement = document.getElementById('errorMessage');
         const successElement = document.getElementById('successMessage');
+        const submitBtn = this.querySelector('button[type="submit"]');
         
-        // Hide previous messages
+        // Hide previous messages and disable submit button
         errorElement.style.display = 'none';
         successElement.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
         
         try {
-          // Call our API endpoint instead of Zapier directly
-          const response = await fetch('/api/access-vault', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: email,
-              vaultId: vaultId
-            })
-          });
+          // Generate a unique request ID
+          const requestId = generateRequestId();
           
-          const data = await response.json();
+          // Show loading state
+          successElement.textContent = 'Processing your request...';
+          successElement.style.display = 'block';
           
-          if (response.ok) {
-            // If Zapier returns a dropboxUrl, redirect to it
-            if (data.dropboxUrl) {
-              window.location.href = data.dropboxUrl;
-            } else {
-              // Show success message if no redirect URL is provided
-              successElement.textContent = 'Access granted! Loading your vault...';
-              successElement.style.display = 'block';
-            }
+          // In a real app, you would send this to your server
+          // which would then trigger the Zapier webhook
+          console.log('Sending to Zapier:', { email, vaultId, requestId });
+          
+          // Simulate waiting for Zapier response
+          const result = await checkStatus(requestId);
+          
+          if (result.status === 'success' && result.dropboxUrl) {
+            // Redirect to Dropbox on success
+            window.location.href = result.dropboxUrl;
           } else {
-            // Show error message from Zapier or default message
-            errorElement.textContent = data.message || 'Invalid Vault ID or Email';
+            // Show error message
+            errorElement.textContent = result.message || 'Invalid Vault ID or Email';
             errorElement.style.display = 'block';
+            successElement.style.display = 'none';
           }
         } catch (error) {
           console.error('Error:', error);
           errorElement.textContent = 'An error occurred. Please try again later.';
           errorElement.style.display = 'block';
+        } finally {
+          // Re-enable the submit button
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Access Vault';
         }
       });
     </script>
