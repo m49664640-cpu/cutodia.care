@@ -251,28 +251,10 @@
       return 'cb_' + Math.random().toString(36).substr(2, 9);
     }
 
-    // Function to send data to Zapier webhook with callback
-    function sendToZapierWithCallback(data) {
-      return new Promise((resolve, reject) => {
-        // Generate a unique callback ID
-        const callbackId = generateCallbackId();
-        
-        // Create a temporary endpoint for the callback
-        window[`zapierCallback_${callbackId}`] = function(response) {
-          // Clean up the temporary callback
-          delete window[`zapierCallback_${callbackId}`];
-          
-          if (response && response.success) {
-            resolve(response);
-          } else {
-            const error = new Error(response?.message || 'Authentication failed');
-            error.response = response;
-            reject(error);
-          }
-        };
-
-        // Send the request to Zapier with the callback URL
-        fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
+    // Function to send data to our Vercel API endpoint
+    async function sendToZapierWithCallback(data) {
+      try {
+        const response = await fetch('/api/zapier-proxy', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -282,11 +264,22 @@
             vaultId: data.vaultId,
             timestamp: new Date().toISOString(),
             source: 'custodia-care-vault-access',
-            userAgent: navigator.userAgent,
-            callbackUrl: `${window.location.origin}${window.location.pathname}?callback=${callbackId}`
+            userAgent: navigator.userAgent
           })
-        }).catch(reject);
-      });
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const error = new Error(errorData.message || 'Failed to process request');
+          error.response = errorData;
+          throw error;
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error in sendToZapier:', error);
+        throw error;
+      }
     }
 
     // Handle callback from Zapier
@@ -339,12 +332,7 @@
       const vaultId = document.getElementById('vaultId').value.trim();
       
       try {
-        // Create an iframe for the callback
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-        
-        // Send data to Zapier with callback
+        // Send data to our Vercel API endpoint
         const response = await sendToZapierWithCallback({ 
           email, 
           vaultId 
@@ -353,9 +341,11 @@
         // Handle successful response
         if (response.redirectUrl) {
           window.location.href = response.redirectUrl;
-        } else {
-          successMessage.textContent = 'Access granted! Please wait...';
+        } else if (response.success) {
+          successMessage.textContent = 'Access granted! Processing your request...';
           successMessage.style.display = 'block';
+        } else {
+          throw new Error(response.message || 'Authentication failed');
         }
         
       } catch (error) {
