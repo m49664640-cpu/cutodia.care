@@ -1,16 +1,34 @@
 import { NextResponse } from 'next/server';
 
+// Helper function to create response with CORS headers
+const createResponse = (data, status = 200) => {
+  const response = NextResponse.json(data, { status });
+  
+  // Set CORS headers
+  response.headers.set('Access-Control-Allow-Origin', 'https://www.custodia.care');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  
+  return response;
+};
+
 export const runtime = 'edge';
 
 export async function POST(request) {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return createResponse({}, 200);
+  }
+
   try {
     const { email, vaultId, timestamp } = await request.json();
     
     // Validate input
     if (!email || !vaultId) {
-      return NextResponse.json(
+      return createResponse(
         { success: false, message: 'Email and Vault ID are required' },
-        { status: 400 }
+        400
       );
     }
 
@@ -27,32 +45,18 @@ export async function POST(request) {
     }
 
     const data = await zapierResponse.json();
-
-    return NextResponse.json(data, {
-      headers: {
-        'Access-Control-Allow-Origin': 'https://www.custodia.care',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+    return createResponse({ ...data, success: true });
     
   } catch (error) {
     console.error('Proxy error:', error);
-    return NextResponse.json(
+    return createResponse(
       { success: false, message: 'Internal server error' },
-      { status: 500 }
+      500
     );
   }
 }
 
 // Handle OPTIONS method for CORS preflight
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': 'https://www.custodia.care',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+  return createResponse({}, 204);
 }

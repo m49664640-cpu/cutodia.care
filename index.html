@@ -263,10 +263,18 @@
       submitBtn.textContent = 'Verifying...';
       
       try {
-        const response = await fetch('/api/zapier-proxy', {
+        // Use full URL in development, relative in production
+        const apiUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:3000/api/zapier-proxy'
+          : '/api/zapier-proxy';
+          
+        const response = await fetch(apiUrl, {
           method: 'POST',
+          mode: 'cors',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             email: email,
@@ -275,9 +283,13 @@
           })
         });
         
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         
-        if (response.ok && result.success) {
+        if (result.success) {
           successMessage.textContent = 'Access granted! Redirecting to your vault...';
           successMessage.style.display = 'block';
           
