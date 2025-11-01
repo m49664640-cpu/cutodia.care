@@ -278,21 +278,26 @@
           body: formData
         });
         
-        // Parse the JSON response
         const result = await response.json();
-        console.log('API Response:', result);
         
-        if (result.status === 'success') {
-          // Show success message
-          successMessage.textContent = 'Access granted! Please check your email for the vault link.';
-          successMessage.style.display = 'block';
-          
-          // Clear the form
-          form.reset();
-        } else {
-          // Handle error case
+        if (!response.ok || result.status === 'error') {
+          // Show error message from Zapier or default message
           const errorMsg = result.message || 'Invalid Vault ID or Email';
           throw new Error(errorMsg);
+        }
+        
+        // Check if we have a Dropbox link in the response
+        if (result.dropboxLink) {
+          // Show success message
+          successMessage.textContent = 'Access granted! Redirecting to your vault...';
+          successMessage.style.display = 'block';
+          
+          // Redirect to the Dropbox link after a short delay
+          setTimeout(() => {
+            window.location.href = result.dropboxLink;
+          }, 1500);
+        } else {
+          throw new Error('No access link provided');
         }
         
       } catch (error) {
