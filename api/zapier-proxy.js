@@ -1,16 +1,30 @@
 // Using native fetch available in Vercel's Node.js environment
 export default async function handler(req, res) {
+  // Set CORS headers for all responses
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400', // 24 hours
+  };
+
   // Handle preflight requests for CORS
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    return res.status(200).end();
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    });
   }
 
   try {
@@ -20,28 +34,39 @@ export default async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(req.body || {}),
     });
 
     const data = await response.json();
     
-    // Set CORS headers for the response
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Return the response from Zapier with CORS headers
+    return new Response(JSON.stringify(data), {
+      status: response.status,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    });
     
-    // Forward the response from Zapier
-    return res.status(response.status).json(data);
   } catch (error) {
     console.error('Error in zapier-proxy:', error);
-    return res.status(500).json({ 
+    
+    return new Response(JSON.stringify({
+      success: false,
       error: 'Internal server error',
-      message: error.message 
+      message: error.message
+    }), {
+      status: 500,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
     });
   }
 }
 
 export const config = {
+  runtime: 'edge', // Use Edge Runtime for better performance
   api: {
     bodyParser: {
       sizeLimit: '1mb',

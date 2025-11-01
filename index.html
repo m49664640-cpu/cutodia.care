@@ -282,42 +282,7 @@
       }
     }
 
-    // Handle callback from Zapier
-    function handleZapierCallback() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const callbackId = urlParams.get('callback');
-      
-      if (callbackId && window.parent !== window) {
-        // This is in an iframe, send message to parent
-        window.parent.postMessage({
-          type: 'zapier-callback',
-          callbackId: callbackId,
-          // Include any other data Zapier sent in the URL
-          ...Object.fromEntries(urlParams.entries())
-        }, '*');
-      }
-    }
-
-    // Check for callback when page loads
-    if (document.readyState === 'complete') {
-      handleZapierCallback();
-    } else {
-      window.addEventListener('load', handleZapierCallback);
-    }
-
-    // Listen for messages from iframe
-    window.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'zapier-callback') {
-        const callbackId = event.data.callbackId;
-        const callback = window[`zapierCallback_${callbackId}`];
-        if (typeof callback === 'function') {
-          // Remove callback data from the URL without page reload
-          window.history.replaceState({}, document.title, window.location.pathname);
-          callback(event.data);
-        }
-      }
-    });
-
+    // Handle form submission
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -332,7 +297,6 @@
       const vaultId = document.getElementById('vaultId').value.trim();
       
       try {
-        // Send data to our Vercel API endpoint
         const response = await sendToZapierWithCallback({ 
           email, 
           vaultId 
@@ -357,6 +321,40 @@
         submitBtn.textContent = 'Access My Vault';
       }
     });
+
+    // Handle callback from Zapier (for iframe integration)
+    function handleZapierCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const callbackId = urlParams.get('callback');
+      
+      if (callbackId && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'zapier-callback',
+          callbackId: callbackId,
+          ...Object.fromEntries(urlParams.entries())
+        }, '*');
+      }
+    }
+
+    // Check for callback when page loads
+    if (document.readyState === 'complete') {
+      handleZapierCallback();
+    } else {
+      window.addEventListener('load', handleZapierCallback);
+    }
+
+    // Listen for messages from iframe
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'zapier-callback') {
+        const callbackId = event.data.callbackId;
+        const callback = window[`zapierCallback_${callbackId}`];
+        if (typeof callback === 'function') {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          callback(event.data);
+        }
+      }
+    });
+
   </script>
 </body>
 </html>
