@@ -304,14 +304,59 @@
       }
     });
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
       updateUI(true);
       
-      // Rename the vault_id field to match Zapier's expected format
-      const vaultIdInput = document.getElementById('vaultId');
-      vaultIdInput.name = 'vault_id';
-      
-      // Let the form submit naturally - no prevent default
+      try {
+        const email = document.getElementById('email').value.trim();
+        const vaultId = document.getElementById('vaultId').value.trim();
+        
+        const response = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            email: email,
+            vault_id: vaultId,
+            return_url: window.location.href
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          // First request succeeded, now get the Dropbox link
+          const dropboxResponse = await fetch('https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+              action: 'get_dropbox_link',
+              email: email,
+              vault_id: vaultId
+            })
+          });
+          
+          const dropboxData = await dropboxResponse.json();
+          
+          if (dropboxData.redirectUrl) {
+            updateUI(false, null, true);
+            setTimeout(() => {
+              window.location.href = dropboxData.redirectUrl;
+            }, 1500);
+          } else {
+            throw new Error('No redirect URL received');
+          }
+        } else {
+          updateUI(false, data.message || 'Invalid credentials');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        updateUI(false, 'There was an error processing your request. Please try again.');
+      }
     });
   </script>
 </body>
