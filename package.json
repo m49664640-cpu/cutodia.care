@@ -1,0 +1,17 @@
+{
+  "name": "custodia-care",
+  "version": "1.0.0",
+  "description": "Custodia.care Vault Access",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.0.0",
+    "next": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
