@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Your Vault - Custodia.care</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1f3a 0%, #2d3561 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 48px 40px;
+    }
+    
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .logo h1 {
+      color: #212340;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .logo p {
+      color: #475569;
+      font-size: 15px;
+    }
+    
+    .vault-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: #212340;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+    
+    .instructions {
+      background: #f9fafb;
+      border-left: 4px solid #212340;
+      padding: 16px 20px;
+      border-radius: 6px;
+      margin-bottom: 32px;
+    }
+    
+    .instructions p {
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    
+    .instructions p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .instructions strong {
+      color: #111827;
+      font-weight: 600;
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    label {
+      display: block;
+      color: #111827;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: Inter, Arial, sans-serif;
+      transition: all 0.2s ease;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus {
+      outline: none;
+      border-color: #212340;
+      box-shadow: 0 0 0 3px rgba(33, 35, 64, 0.1);
+    }
+    
+    input[type="text"]::placeholder,
+    input[type="email"]::placeholder {
+      color: #94a3b8;
+    }
+    
+    .submit-btn {
+      width: 100%;
+      padding: 16px 24px;
+      background-color: #212340;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(33, 35, 64, 0.2);
+      transition: all 0.2s ease;
+    }
+    
+    .submit-btn:hover {
+      background-color: #181a2e;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(33, 35, 64, 0.3);
+    }
+    
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .success-message {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .help-text {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .help-text p {
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .help-text a {
+      color: #212340;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .help-text a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="vault-icon">🔐</div>
+    
+    <div class="logo">
+      <h1>Access Your Vault</h1>
+      <p>Secure Document Storage</p>
+    </div>
+    
+    <div class="instructions">
+      <p><strong>To access your vault:</strong></p>
+      <p>1. Check your Direct Messages in Circle for your Vault ID</p>
+      <p>2. Enter your full name and Vault ID below</p>
+      <p>3. Click "Access My Vault" to view your documents</p>
+    </div>
+    
+    <div id="errorMessage" class="error-message"></div>
+    <div id="successMessage" class="success-message"></div>
+    
+    <form id="vaultForm">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          placeholder="john@example.com" 
+          required
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="vaultId">Vault ID</label>
+        <input 
+          type="text" 
+          id="vaultId" 
+          placeholder="Enter your Vault ID from DM" 
+          required
+        >
+      </div>
+      
+      <button type="submit" class="submit-btn">
+        Access My Vault
+      </button>
+    </form>
+    
+    <div class="help-text">
+      <p>Can't find your Vault ID?<br>
+      <a href="https://custodia.circle.so">Check your Direct Messages</a> or contact support</p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('vaultForm');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Hide previous messages
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+      
+      // Get form values
+      const email = document.getElementById('email').value.trim();
+      const vaultId = document.getElementById('vaultId').value.trim();
+      
+      // TODO: Replace with actual Google Sheets API call
+      // For now, showing demo behavior
+      
+      try {
+        // Simulate API call
+        console.log('Looking up:', email, vaultId);
+        
+        // DEMO: Show success (replace with actual lookup)
+        successMessage.textContent = 'Access granted! Redirecting to your vault...';
+        successMessage.style.display = 'block';
+        
+        // In production, this would redirect to the actual Dropbox link
+        setTimeout(() => {
+          // window.location.href = dropboxLink;
+          alert('In production, you would be redirected to your Dropbox vault here!');
+        }, 1500);
+        
+      } catch (error) {
+        errorMessage.textContent = 'Invalid credentials. Please check your email and Vault ID.';
+        errorMessage.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
+
