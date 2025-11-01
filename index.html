@@ -274,18 +274,11 @@
     form.method = 'POST';
     form.action = 'https://hooks.zapier.com/hooks/catch/24850708/ui7zb0u/';
 
-    // Add hidden return URL field
-    const returnUrlInput = document.createElement('input');
-    returnUrlInput.type = 'hidden';
-    returnUrlInput.name = 'return_url';
-    returnUrlInput.value = window.location.href;
-    form.appendChild(returnUrlInput);
-
     // Check URL parameters on page load for response
     window.addEventListener('load', () => {
       const params = new URLSearchParams(window.location.search);
       const status = params.get('status');
-      const redirectUrl = params.get('redirect_url');
+      const redirectUrl = params.get('redirectUrl');
       const message = params.get('message');
 
       if (status === 'success' && redirectUrl) {
@@ -319,7 +312,7 @@
           },
           body: new URLSearchParams({
             email: email,
-            vault_id: vaultId
+            vaultId: vaultId
           })
         });
         
