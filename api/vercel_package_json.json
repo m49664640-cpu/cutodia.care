@@ -1,8 +1,0 @@
-{
-  "name": "custodia-vault",
-  "version": "1.0.0",
-  "description": "Custodia.care Vault Access",
-  "dependencies": {
-    "google-spreadsheet": "^4.1.2"
-  }
-}
