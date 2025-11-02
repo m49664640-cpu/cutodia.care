@@ -1,4 +1,5 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { JWT } = require('google-auth-library');
 
 export default async function handler(req, res) {
   // Enable CORS for custodia.care
@@ -30,14 +31,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Connect to Google Sheet
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
-
-    // Authenticate using service account
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    // Create JWT auth for service account
+    const serviceAccountAuth = new JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      scopes: [
+        'https://www.googleapis.com/auth/spreadsheets',
+      ],
     });
+
+    // Connect to Google Sheet
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, serviceAccountAuth);
 
     // Load the document
     await doc.loadInfo();
@@ -99,13 +103,13 @@ async function logAccess(doc, email, vaultId, status, ipAddress) {
       });
     }
 
-    await logSheet.addRow({
-      'Timestamp': new Date().toISOString(),
-      'Email': email,
-      'Vault ID': vaultId,
-      'Status': status,
-      'IP Address': ipAddress || 'Unknown'
-    });
+    await logSheet.addRow([
+      new Date().toISOString(),
+      email,
+      vaultId,
+      status,
+      ipAddress || 'Unknown'
+    ]);
   } catch (error) {
     console.error('Logging error:', error);
     // Don't fail the request if logging fails
