@@ -262,8 +262,7 @@
   </div>
 
   <script>
-    // IMPORTANT: Replace this URL with your deployed Google Apps Script URL
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxkBmZXKNkZpemcxpL9wsoqRVzhMlv8ryuXth9RvTr6rFU5L7aNO_2pG53Tp54V9-sJ/exec';
+    const API_URL = '/api/vault-lookup';
 
     const form = document.getElementById('vaultForm');
     const errorMessage = document.getElementById('errorMessage');
@@ -286,7 +285,7 @@
       submitBtn.innerHTML = '<span class="spinner"></span>Verifying...';
 
       try {
-        // Call Google Apps Script API
+        // Call Vercel API endpoint
         const response = await fetch(API_URL, {
           method: 'POST',
           headers: {
@@ -313,7 +312,6 @@
           // Show error message
           errorMessage.textContent = result.message || 'Invalid credentials. Please check your email and Vault ID.';
           errorMessage.style.display = 'block';
-          
           // Re-enable button
           submitBtn.disabled = false;
           submitBtn.innerHTML = 'Access My Vault';
@@ -323,7 +321,6 @@
         console.error('Error:', error);
         errorMessage.textContent = 'Connection error. Please check your internet connection and try again.';
         errorMessage.style.display = 'block';
-        
         // Re-enable button
         submitBtn.disabled = false;
         submitBtn.innerHTML = 'Access My Vault';
