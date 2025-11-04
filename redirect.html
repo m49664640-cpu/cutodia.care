@@ -123,37 +123,98 @@
       <div class="error">
         <h3>Member ID Not Found</h3>
         <p>We couldn't find your member ID in the link. Please return to your Circle portal and try again.</p>
-        <a href="https://custodia.circle.so" class="back-link">← Back to Portal</a>
+        <a href="https://community.custodia.care" class="back-link">← Back to Portal</a>
       </div>
     </div>
   </div>
 
   <script>
-    // Get the member_id from the URL parameters
-    const params = new URLSearchParams(window.location.search);
-    const memberId = params.get('member_id');
-    
     // Fillout form URL
     const filloutUrl = 'https://custodiacare.fillout.com/t/uzr9iXb1Ejus';
 
-    // Log for debugging (optional - remove in production if needed)
+    // Log for debugging
     console.log('Redirect page loaded');
-    console.log('Member ID:', memberId);
 
-    if (memberId) {
-      // Member ID found - redirect to Fillout with the ID
-      console.log('Redirecting to:', `${filloutUrl}?member_id=${memberId}`);
-      
-      // Small delay to show the loading screen (optional)
-      setTimeout(() => {
-        window.location.href = `${filloutUrl}?member_id=${memberId}`;
-      }, 800);
-    } else {
-      // No member ID found - show error
-      console.error('No member_id parameter found in URL');
+    // Function to redirect to Fillout
+    function redirectToFillout(memberId) {
+      console.log('Redirecting to Fillout with member_id:', memberId);
+      window.location.href = `${filloutUrl}?member_id=${memberId}`;
+    }
+
+    // Function to show error
+    function showError(message) {
+      console.error('Error:', message);
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error').style.display = 'block';
+      if (message) {
+        document.querySelector('#error .error p').textContent = message;
+      }
     }
+
+    // Try to get member ID from Circle API
+    async function getMemberIdFromCircle() {
+      try {
+        console.log('Fetching member ID from Circle API...');
+
+        const response = await fetch('/api/get-member-id', {
+          method: 'GET',
+          credentials: 'include', // Include cookies
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        console.log('API response:', data);
+
+        if (data.success && data.member_id) {
+          // Got member ID from Circle API
+          console.log('Member ID from Circle API:', data.member_id);
+          redirectToFillout(data.member_id);
+          return true;
+        } else {
+          console.warn('Circle API did not return member ID:', data);
+          return false;
+        }
+      } catch (error) {
+        console.error('Error calling Circle API:', error);
+        return false;
+      }
+    }
+
+    // Try to get member ID from URL parameter (fallback)
+    function getMemberIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const memberId = params.get('member_id');
+
+      if (memberId && memberId !== '{{community_member_id}}') {
+        console.log('Member ID from URL:', memberId);
+        return memberId;
+      }
+
+      return null;
+    }
+
+    // Main logic
+    async function init() {
+      // First, try URL parameter (fastest)
+      const urlMemberId = getMemberIdFromUrl();
+      if (urlMemberId) {
+        redirectToFillout(urlMemberId);
+        return;
+      }
+
+      // If URL parameter failed, try Circle API
+      const apiSuccess = await getMemberIdFromCircle();
+
+      if (!apiSuccess) {
+        // Both methods failed - show error
+        showError('Could not retrieve your member ID. Please make sure you are logged in to Circle and try again.');
+      }
+    }
+
+    // Start the process
+    init();
   </script>
 </body>
 </html>
