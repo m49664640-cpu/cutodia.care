@@ -119,10 +119,31 @@
       <div class="spinner"></div>
     </div>
 
+    <div id="email-form" style="display: none;">
+      <h1>Verify Your Identity</h1>
+      <p>Please enter your email address to continue to the form.</p>
+      <form id="emailForm" style="margin-top: 24px;">
+        <input
+          type="email"
+          id="emailInput"
+          placeholder="your.email@example.com"
+          required
+          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; margin-bottom: 16px;"
+        >
+        <button
+          type="submit"
+          style="width: 100%; padding: 12px 26px; background-color: #212340; color: #ffffff; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
+        >
+          Continue to Form
+        </button>
+      </form>
+      <p id="emailError" style="color: #dc2626; font-size: 14px; margin-top: 12px; display: none;"></p>
+    </div>
+
     <div id="error" style="display: none;">
       <div class="error">
         <h3>Member ID Not Found</h3>
-        <p>We couldn't find your member ID in the link. Please return to your Circle portal and try again.</p>
+        <p>We couldn't find your member ID. Please return to your Circle portal and try again.</p>
         <a href="https://community.custodia.care" class="back-link">← Back to Portal</a>
       </div>
     </div>
@@ -141,48 +162,96 @@
       window.location.href = `${filloutUrl}?member_id=${memberId}`;
     }
 
+    // Function to show email form
+    function showEmailForm() {
+      console.log('Showing email form');
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('email-form').style.display = 'block';
+      document.getElementById('emailInput').focus();
+    }
+
     // Function to show error
     function showError(message) {
       console.error('Error:', message);
       document.getElementById('loading').style.display = 'none';
+      document.getElementById('email-form').style.display = 'none';
       document.getElementById('error').style.display = 'block';
       if (message) {
         document.querySelector('#error .error p').textContent = message;
       }
     }
 
-    // Try to get member ID from Circle API
-    async function getMemberIdFromCircle() {
-      try {
-        console.log('Fetching member ID from Circle API...');
+    // Function to show email error
+    function showEmailError(message) {
+      const errorEl = document.getElementById('emailError');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
 
-        const response = await fetch('/api/get-member-id', {
+    // Function to hide email error
+    function hideEmailError() {
+      document.getElementById('emailError').style.display = 'none';
+    }
+
+    // Look up member ID by email
+    async function lookupMemberByEmail(email) {
+      try {
+        console.log('Looking up member ID for email:', email);
+
+        const response = await fetch(`/api/lookup-member?email=${encodeURIComponent(email)}`, {
           method: 'GET',
-          credentials: 'include', // Include cookies
           headers: {
             'Content-Type': 'application/json'
           }
         });
 
         const data = await response.json();
-        console.log('API response:', data);
+        console.log('Lookup response:', data);
 
         if (data.success && data.member_id) {
-          // Got member ID from Circle API
-          console.log('Member ID from Circle API:', data.member_id);
-          redirectToFillout(data.member_id);
-          return true;
+          console.log('Found member ID:', data.member_id);
+          return data.member_id;
         } else {
-          console.warn('Circle API did not return member ID:', data);
-          return false;
+          console.warn('Member not found:', data);
+          return null;
         }
       } catch (error) {
-        console.error('Error calling Circle API:', error);
-        return false;
+        console.error('Error looking up member:', error);
+        return null;
       }
     }
 
-    // Try to get member ID from URL parameter (fallback)
+    // Handle email form submission
+    document.getElementById('emailForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideEmailError();
+
+      const email = document.getElementById('emailInput').value.trim();
+
+      if (!email) {
+        showEmailError('Please enter your email address');
+        return;
+      }
+
+      // Show loading
+      document.getElementById('email-form').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+
+      // Look up member ID
+      const memberId = await lookupMemberByEmail(email);
+
+      if (memberId) {
+        // Success - redirect to Fillout
+        redirectToFillout(memberId);
+      } else {
+        // Not found - show error
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('email-form').style.display = 'block';
+        showEmailError('Email not found. Please make sure you entered the email address associated with your Custodia.care account.');
+      }
+    });
+
+    // Try to get member ID from URL parameter
     function getMemberIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const memberId = params.get('member_id');
@@ -204,13 +273,9 @@
         return;
       }
 
-      // If URL parameter failed, try Circle API
-      const apiSuccess = await getMemberIdFromCircle();
-
-      if (!apiSuccess) {
-        // Both methods failed - show error
-        showError('Could not retrieve your member ID. Please make sure you are logged in to Circle and try again.');
-      }
+      // URL parameter failed - show email form
+      console.log('No member ID in URL, showing email form');
+      showEmailForm();
     }
 
     // Start the process
