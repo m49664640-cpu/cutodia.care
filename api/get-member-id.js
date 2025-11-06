@@ -30,8 +30,9 @@ export default async function handler(req, res) {
       });
     }
 
-    // Call Circle's Headless API to get current user info
-    const circleApiUrl = 'https://app.circle.so/api/v1/me';
+    // Call Circle's API to get current user info
+    // Use the community-specific API endpoint
+    const circleApiUrl = 'https://community.custodia.care/api/v1/me';
     const circleApiToken = process.env.CIRCLE_API_TOKEN;
 
     if (!circleApiToken) {

@@ -150,11 +150,14 @@
   </div>
 
   <script>
-    // Fillout form URL
-    const filloutUrl = 'https://custodiacare.fillout.com/t/uzr9iXb1Ejus';
+    // Get form ID from URL parameter, default to successor form
+    const params = new URLSearchParams(window.location.search);
+    const formId = params.get('form') || 'uzr9iXb1Ejus';
+    const filloutUrl = `https://custodiacare.fillout.com/t/${formId}`;
 
     // Log for debugging
     console.log('Redirect page loaded');
+    console.log('Form ID:', formId);
 
     // Function to redirect to Fillout
     function redirectToFillout(memberId) {
