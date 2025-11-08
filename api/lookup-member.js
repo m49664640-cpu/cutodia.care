@@ -77,9 +77,9 @@ export default async function handler(req, res) {
       if (successorSheet) {
         const successorRows = await successorSheet.getRows();
         
-        // Find matching row in Successor Tracking
+        // Find matching row in Successor Tracking using "Successor Email" column
         const successorMatch = successorRows.find(row => {
-          const rowEmail = row.get('Email')?.toLowerCase().trim();
+          const rowEmail = row.get('Successor Email')?.toLowerCase().trim();
           return rowEmail === cleanEmail;
         });
 
