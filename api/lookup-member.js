@@ -54,13 +54,47 @@ export default async function handler(req, res) {
     // Clean the input email
     const cleanEmail = email.toLowerCase().trim();
 
-    // Find matching row
-    const match = rows.find(row => {
+    // Find matching row in Vault Database
+    let match = rows.find(row => {
       const rowEmail = row.get('Email')?.toLowerCase().trim();
       return rowEmail === cleanEmail;
     });
 
-    if (!match) {
+    let memberId = null;
+    let firstName = null;
+    let lastName = null;
+    let source = 'Vault Database';
+
+    if (match) {
+      // Found in Vault Database
+      memberId = match.get('Member ID');
+      firstName = match.get('First Name');
+      lastName = match.get('Last Name');
+    } else {
+      // Not found in Vault Database, try Successor Tracking sheet
+      const successorSheet = doc.sheetsByTitle['Successor Tracking'];
+      
+      if (successorSheet) {
+        const successorRows = await successorSheet.getRows();
+        
+        // Find matching row in Successor Tracking
+        const successorMatch = successorRows.find(row => {
+          const rowEmail = row.get('Email')?.toLowerCase().trim();
+          return rowEmail === cleanEmail;
+        });
+
+        if (successorMatch) {
+          // Found in Successor Tracking sheet
+          memberId = successorMatch.get('Successor member ID');
+          firstName = successorMatch.get('First Name');
+          lastName = successorMatch.get('Last Name');
+          source = 'Successor Tracking';
+        }
+      }
+    }
+
+    // If still not found, return 404
+    if (!memberId) {
       return res.status(404).json({
         success: false,
         error: 'No member found with that email address'
@@ -68,14 +102,13 @@ export default async function handler(req, res) {
     }
 
     // Return the member ID
-    const memberId = match.get('Member ID');
-
     return res.status(200).json({
       success: true,
       member_id: memberId,
-      email: match.get('Email'),
-      first_name: match.get('First Name'),
-      last_name: match.get('Last Name')
+      email: cleanEmail,
+      first_name: firstName,
+      last_name: lastName,
+      source: source
     });
 
   } catch (error) {
