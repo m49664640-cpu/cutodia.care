@@ -85,9 +85,9 @@ export default async function handler(req, res) {
 
         if (successorMatch) {
           // Found in Successor Tracking sheet
-          memberId = successorMatch.get('Successor member ID');
-          firstName = successorMatch.get('First Name');
-          lastName = successorMatch.get('Last Name');
+          memberId = successorMatch.get('Successor_Member_ID');
+          firstName = successorMatch.get('Successor Name');
+          lastName = successorMatch.get('Successor Name'); // Full name in one field
           source = 'Successor Tracking';
         }
       }
